@@ -20,11 +20,20 @@
 ### /add-liked-user-from-name
 
 - likedを監視する対象のユーザーを設定するコマンドです
-  - `@xxxxx`でメンションするときにxxxxx部分を使って指定します
+  - `@xxxxx`でメンションするときのxxxxx部分を使って指定します
 
 ### /add-liked-user-from-id
 
 - 前述のコマンドのidバージョンです(大抵の人はid知らないので使いづらいかもしれません)
+
+### /remove-liked-user-from-name
+
+- likedを監視する対象のユーザーを削除するコマンドです([v0.2.0](https://github.com/tetsuya-ki/twitter-liked-to-discordbot/releases/tag/v0.2.0)で追加)
+  - `@xxxxx`でメンションするときのxxxxx部分を使って指定します
+
+### /remove-liked-user-from-id
+
+- likedを監視する対象のユーザーを削除するコマンドです([v0.2.0](https://github.com/tetsuya-ki/twitter-liked-to-discordbot/releases/tag/v0.2.0)で追加)
 
 ### /twitter-task-check
 
@@ -33,13 +42,7 @@
 
 ## 今後実装予定のコマンド
 
-### /remove-liked-user-from-name(未実装)
-
-- likedを監視する対象のユーザーを削除するコマンドです
-
-### /remove-liked-user-from-id(未実装)
-
-- likedを監視する対象のユーザーを削除するコマンドです
+### 考えてない
 
 ## 環境変数
 

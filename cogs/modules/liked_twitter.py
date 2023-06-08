@@ -207,7 +207,7 @@ class LikedTwitter:
         if isinstance(res, dict):
             data = res.get('data')
             if isinstance(data, dict):
-                return data.get('id')
+                return data.get('id'), data.get('name')
 
     async def user_name_from_user_id(self, token, id):
         path = f'users/{id}'
@@ -216,7 +216,7 @@ class LikedTwitter:
         if isinstance(res, dict):
             data = res.get('data')
             if isinstance(data, dict):
-                return data.get('username')
+                return data.get('username'), data.get('name')
 
     async def liked_tweets_from_user_id(self, token, discord_id, twitter_user_id, twitter_user_name, guild_id, channel_id):
         path = f'users/{twitter_user_id}/liked_tweets'
@@ -228,6 +228,36 @@ class LikedTwitter:
         else:
             LOG.info('何も取得されませんでした。')
         return res
+
+    async def remove_liked_tweets_from_user_id(self, token, discord_id, twitter_user_id, twitter_user_name, guild_id, channel_id):
+        self.decode()
+        conn = sqlite3.connect(self.FILE_PATH)
+        with conn:
+            cur = conn.cursor()
+            select_sql = f'''
+                            select count(1)
+                            from liked_user
+                            where discord_id = '{discord_id}'
+                                and twitter_id = '{twitter_user_id}'
+                        '''
+            cur.execute(select_sql)
+            result = cur.fetchmany(1)
+            if len(result) > 0:
+                cnt = result[0][0]
+
+            if cnt:
+                delete_sql = f'''
+                                delete from liked_user
+                                where discord_id = '{discord_id}'
+                                    and twitter_id = '{twitter_user_id}'
+                            '''
+                LOG.debug(delete_sql)
+                cur.execute(delete_sql)
+            else:
+                return
+        self.read()
+        self.encode()
+        return 'OK'
 
     # discord_id bearer_token twitter_id liked_twitter_id guild_id channel_id
     async def liked_to_recent_list(self, bearer_token:str,twitter_id:str,liked_twitter_id:str):

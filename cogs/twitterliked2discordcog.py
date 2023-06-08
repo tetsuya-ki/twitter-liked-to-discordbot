@@ -83,7 +83,7 @@ class TwitterLiked2DiscordCog(commands.Cog):
 
     @app_commands.command(
         name='add-liked-user-from-name',
-        description='TwitterのLikedを取得したいユーザを追加(usernameを入力(@の後の文字列))')
+        description='TwitterのLikedを監視したいユーザを追加(usernameを入力(@の後の文字列))')
     @app_commands.describe(
         twitter_user_name='username(@の後の文字列)を指定')
     @app_commands.describe(
@@ -103,8 +103,8 @@ class TwitterLiked2DiscordCog(commands.Cog):
         await interaction.response.defer(ephemeral = hidden)
 
         # Twitter User NameからTwitter Idを変換(無理ならエラー)
-        twitter_user_id = await self.likedTwitter.user_id_from_user_name(token, twitter_user_name)
-        LOG.info(f'LikedしたいTwitterユーザを追加(username指定): {twitter_user_name}')
+        twitter_user_id, twitter_nick_name = await self.likedTwitter.user_id_from_user_name(token, twitter_user_name)
+        LOG.info(f'Likedを監視したいTwitterユーザを追加(username指定): {twitter_user_name}({twitter_nick_name})')
         if not twitter_user_id:
             await interaction.followup.send('ユーザIDの取得に失敗しました。見直しをお願いします。', ephemeral=hidden)
             return
@@ -112,13 +112,13 @@ class TwitterLiked2DiscordCog(commands.Cog):
         # Likedしたいユーザを追加(discordId,TwitterId,TwitterName,GuildId,ChannelId)
         res = await self.likedTwitter.liked_tweets_from_user_id(token, interaction.user.id, twitter_user_id, twitter_user_name,interaction.guild.id, interaction.channel.id)
         if res:
-            await interaction.followup.send('Liked監視対象のTwitterIDを設定しました', ephemeral=hidden)
+            await interaction.followup.send(f'Liked監視対象のTwitterIDを設定しました。\n対象: {twitter_user_name}({twitter_nick_name})', ephemeral=hidden)
         else:
             await interaction.followup.send('何も取得できませんでした。対象が誤っているか、トークンが無効です。', ephemeral=hidden)
 
     @app_commands.command(
         name='add-liked-user-from-id',
-        description='TwitterのLikedを取得したいユーザを追加(idを入力(ユーザーIDと呼ばれるもの。開発者的なツールが必要かも))')
+        description='TwitterのLikedを監視したいユーザを追加(idを入力(ユーザIDと呼ばれるもの。開発者的なツールが必要かも))')
     @app_commands.describe(
         twitter_user_id='idを指定(数字必須)')
     @app_commands.describe(
@@ -140,8 +140,8 @@ class TwitterLiked2DiscordCog(commands.Cog):
         await interaction.response.defer(ephemeral = hidden)
 
         # Twitter User NameからTwitter Idを変換(無理ならエラー)
-        LOG.info(f'LikedしたいTwitterユーザを追加(id指定): {twitter_user_id}')
-        twitter_user_name = await self.likedTwitter.user_name_from_user_id(token, twitter_user_id)
+        LOG.info(f'LikedしたいTwitterユーザを追加(id指定): {twitter_user_id}({twitter_nick_name})')
+        twitter_user_name, twitter_nick_name = await self.likedTwitter.user_name_from_user_id(token, twitter_user_id)
         if not twitter_user_name:
             await interaction.followup.send('ユーザ名の取得に失敗しました。見直しをお願いします。', ephemeral=hidden)
             return
@@ -149,7 +149,79 @@ class TwitterLiked2DiscordCog(commands.Cog):
         # Likedしたいユーザを追加
         res = await self.likedTwitter.liked_tweets_from_user_id(token, interaction.user.id, twitter_user_id, twitter_user_name,interaction.guild.id, interaction.channel.id)
         if res:
-            await interaction.followup.send('Liked監視対象のTwitterIDを設定しました', ephemeral=hidden)
+            await interaction.followup.send(f'Liked監視対象のTwitterIDを設定しました。\n対象: {twitter_user_name}({twitter_nick_name})', ephemeral=hidden)
+        else:
+            await interaction.followup.send('何も取得できませんでした。対象が誤っているか、トークンが無効です。', ephemeral=hidden)
+
+    @app_commands.command(
+        name='remove-liked-user-from-name',
+        description='TwitterのLiked監視をやめたいユーザを設定(usernameを入力(@の後の文字列))')
+    @app_commands.describe(
+        twitter_user_name='username(@の後の文字列)を指定')
+    @app_commands.describe(
+        reply_is_hidden='Botの実行結果を全員に見せるどうか(他の人にもコマンドを使わせたい場合、全員に見せる方がオススメです))')
+    async def _removeLikedUserFromName(self,
+                        interaction: discord.Interaction,
+                        twitter_user_name: str,
+                        reply_is_hidden: Literal['自分のみ', '全員に見せる'] = SHOW_ME):
+        hidden = True if reply_is_hidden == self.SHOW_ME else False
+        self.check_printer_is_running()
+
+        # チェック
+        token = self.likedTwitter.bearer_token_from_discord_id(interaction.user.id)
+        if not token:
+            await interaction.response.send_message('あらかじめ、`/set-bearer-token`でトークンを設定してください。Twitter開発者ポータルで取得できます', ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral = hidden)
+
+        # Twitter User NameからTwitter Idを変換(無理ならエラー)
+        twitter_user_id, twitter_nick_name = await self.likedTwitter.user_id_from_user_name(token, twitter_user_name)
+        LOG.info(f'TwitterのLiked監視をやめたいTwitterユーザを指定(username指定): {twitter_user_name}({twitter_nick_name})')
+        if not twitter_user_id:
+            await interaction.followup.send('ユーザIDの取得に失敗しました。見直しをお願いします。', ephemeral=hidden)
+            return
+
+        # Liked監視をやめたいユーザを追加(discordId,TwitterId,TwitterName,GuildId,ChannelId)
+        res = await self.likedTwitter.remove_liked_tweets_from_user_id(token, interaction.user.id, twitter_user_id, twitter_user_name,interaction.guild.id, interaction.channel.id)
+        if res:
+            await interaction.followup.send(f'Liked監視対象のTwitterIDを削除しました。\n対象: {twitter_user_name}({twitter_nick_name})', ephemeral=hidden)
+        else:
+            await interaction.followup.send('何も取得できませんでした。対象が誤っているか、トークンが無効です。', ephemeral=hidden)
+
+    @app_commands.command(
+        name='remove-liked-user-from-id',
+        description='TwitterのLiked監視をやめたいユーザを設定(idを入力(ユーザIDと呼ばれるもの。開発者的なツールが必要かも))')
+    @app_commands.describe(
+        twitter_user_id='idを指定(数字必須)')
+    @app_commands.describe(
+        reply_is_hidden='Botの実行結果を全員に見せるどうか(他の人にもコマンドを使わせたい場合、全員に見せる方がオススメです))')
+    async def _removeLikedUserFromId(self,
+                        interaction: discord.Interaction,
+                        twitter_user_id: str,
+                        reply_is_hidden: Literal['自分のみ', '全員に見せる'] = SHOW_ME):
+        hidden = True if reply_is_hidden == self.SHOW_ME else False
+        self.check_printer_is_running()
+        # チェック
+        if not twitter_user_id.isdigit():
+            await interaction.response.send_message('twitter_user_idは数字である必要があります', ephemeral=True)
+            return
+        token = self.likedTwitter.bearer_token_from_discord_id(interaction.user.id)
+        if not token:
+            await interaction.response.send_message('あらかじめ、`/set-bearer-token`でトークンを設定してください。Twitter開発者ポータルで取得できます', ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral = hidden)
+
+        # Twitter User NameからTwitter Idを変換(無理ならエラー)
+        twitter_user_name, twitter_nick_name = await self.likedTwitter.user_name_from_user_id(token, twitter_user_id)
+        if not twitter_user_name:
+            await interaction.followup.send('ユーザ名の取得に失敗しました。見直しをお願いします。', ephemeral=hidden)
+            return
+        LOG.info(f'Likedの監視をやめたいTwitterユーザを指定(id指定): {twitter_user_id}({twitter_nick_name})')
+
+        # Liked監視をやめたいユーザを追加(discordId,TwitterId,TwitterName,GuildId,ChannelId)
+        res = await self.likedTwitter.remove_liked_tweets_from_user_id(token, interaction.user.id, twitter_user_id, twitter_user_name,interaction.guild.id, interaction.channel.id)
+        if res:
+            await interaction.followup.send(f'Liked監視対象のTwitterIDを削除しました。\n対象: {twitter_user_name}({twitter_nick_name})', ephemeral=hidden)
         else:
             await interaction.followup.send('何も取得できませんでした。対象が誤っているか、トークンが無効です。', ephemeral=hidden)
 
@@ -204,24 +276,24 @@ class TwitterLiked2DiscordCog(commands.Cog):
         LOG.error(error)
         if isinstance(error, app_commands.CheckFailure):
             if interaction.command.name == 'remind-list-all':
-                await interaction.response.send_message(f'エラーが発生しました(DM(ダイレクトメッセージ)でのみ実行できます)', ephemeral=True)
+                await interaction.followup.send(f'エラーが発生しました(DM(ダイレクトメッセージ)でのみ実行できます)', ephemeral=True)
             else:
-                await interaction.response.send_message(f'エラーが発生しました(コマンドが実行できません)', ephemeral=True)
+                await interaction.followup.send(f'エラーが発生しました(コマンドが実行できません)', ephemeral=True)
         elif isinstance(error, discord.ext.commands.PrivateMessageOnly):
-            await interaction.response.send_message(f'エラーが発生しました(DM(ダイレクトメッセージ)でのみ実行できます)', ephemeral=True)
+            await interaction.followup.send(f'エラーが発生しました(DM(ダイレクトメッセージ)でのみ実行できます)', ephemeral=True)
         elif isinstance(error, app_commands.NoPrivateMessage):
-            await interaction.response.send_message(f'エラーが発生しました(ギルドでのみ実行できます(DMやグループチャットでは実行できません))', ephemeral=True)
+            await interaction.followup.send(f'エラーが発生しました(ギルドでのみ実行できます(DMやグループチャットでは実行できません))', ephemeral=True)
         elif isinstance(error, discord.ext.commands.NotOwner):
-            await interaction.response.send_message(f'エラーが発生しました(Botのオーナーのみ実行できます)', ephemeral=True)
+            await interaction.followup.send(f'エラーが発生しました(Botのオーナーのみ実行できます)', ephemeral=True)
         elif isinstance(error, app_commands.MissingPermissions):
             if error.missing_perms[0] == 'administrator':
-                await interaction.response.send_message(f'エラーが発生しました(ギルドの管理者のみ実行できます)', ephemeral=True)
+                await interaction.followup.send(f'エラーが発生しました(ギルドの管理者のみ実行できます)', ephemeral=True)
             else:
-                await interaction.response.send_message(f'エラーが発生しました(権限が足りません)', ephemeral=True)
+                await interaction.followup.send(f'エラーが発生しました(権限が足りません)', ephemeral=True)
         elif isinstance(error, discord.errors.Forbidden):
-            await interaction.response.send_message(f'エラーが発生しました(権限が足りません(おそらくBotが表示/編集できない))', ephemeral=True)
+            await interaction.followup.send(f'エラーが発生しました(権限が足りません(おそらくBotが表示/編集できない))', ephemeral=True)
         else:
-            await interaction.response.send_message(f'エラーが発生しました({error})', ephemeral=True)
+            await interaction.followup.send(f'エラーが発生しました({error})', ephemeral=True)
 
 # Bot本体側からコグを読み込む際に呼び出される関数。
 async def setup(bot):
