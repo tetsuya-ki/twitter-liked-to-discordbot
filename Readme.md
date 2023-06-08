@@ -12,6 +12,11 @@
 - 大抵のコマンドはあらかじめ、このコマンドでトークンを設定しておく必要があります
 - Twitterの開発者ポータルで取得可能です
 
+### /toggle-bearer-token
+
+- 自分のBearer Tokenの有効/無効を切り替えるコマンドです([v0.2.0](https://github.com/tetsuya-ki/twitter-liked-to-discordbot/releases/tag/v0.2.0)で追加)
+- トークン無効時は、そのDiscordIDで登録されているTwitterのLikeを見ません
+
 ### /add-liked-user-from-name
 
 - likedを監視する対象のユーザーを設定するコマンドです
@@ -27,11 +32,6 @@
   - なお、何かコマンドを実行した際にも自動でチェックされます
 
 ## 今後実装予定のコマンド
-
-### /toggle-bearer-token(未実装)
-
-- Bearer Tokenの有効/無効を切り替えるコマンドです
-  - Bearer Tokenなどの状態も表示させていいかもしれないですね
 
 ### /remove-liked-user-from-name(未実装)
 

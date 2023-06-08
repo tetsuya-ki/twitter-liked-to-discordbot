@@ -110,6 +110,42 @@ class LikedTwitter:
         self.read()
         self.encode()
 
+    def toggle_bearer_token(self, discord_id):
+        self.decode()
+        conn = sqlite3.connect(self.FILE_PATH)
+        with conn:
+            cur = conn.cursor()
+            now = datetime.datetime.now(self.JST)
+            select_sql = f'''
+                            select status
+                            from user
+                            where discord_id = '{discord_id}'
+                        '''
+            cur.execute(select_sql)
+            result = cur.fetchmany(1)
+            new_status = None
+            if len(result) > 0:
+                if result[0][0] == self.STATUS_VALID:
+                    new_status = self.STATUS_INVALID
+                else:
+                    new_status = self.STATUS_VALID
+            else:
+                return new_status
+            update_sql = f'''
+                            update user
+                            set status = '{new_status}'
+                            , updated_at = '{now}'
+                            where discord_id = '{discord_id}'
+                        '''
+            LOG.debug(update_sql)
+            cur.execute(update_sql)
+        self.read()
+        self.encode()
+        if new_status == self.STATUS_VALID:
+            return '有効'
+        else:
+            return '無効'
+
     def _set_liked_user(self, discord_id, twitter_user_id, twitter_user_name, guild_id, channel_id):
         self.decode()
         conn = sqlite3.connect(self.FILE_PATH)

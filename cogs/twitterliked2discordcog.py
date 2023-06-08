@@ -53,7 +53,7 @@ class TwitterLiked2DiscordCog(commands.Cog):
         bearer_token='TwitterのDeveloper Portalでbearer_tokenを取得しておき、こちらに入力してください')
     @app_commands.describe(
         reply_is_hidden='Botの実行結果を全員に見せるどうか(他の人にもコマンドを使わせたい場合、全員に見せる方がオススメです))')
-    async def _setbearer_token(self,
+    async def _set_bearer_token(self,
                         interaction: discord.Interaction,
                         bearer_token: str,
                         reply_is_hidden: Literal['自分のみ', '全員に見せる'] = SHOW_ME):
@@ -62,6 +62,24 @@ class TwitterLiked2DiscordCog(commands.Cog):
         self.check_printer_is_running()
         self.likedTwitter.set_bearer_token(interaction.user.id, bearer_token)
         await interaction.response.send_message('bearer_tokenを設定しました', ephemeral=hidden)
+
+    @app_commands.command(
+        name='toggle-bearer-token',
+        description='bearer_tokenの有効/無効を切り替え')
+    @app_commands.describe(
+        reply_is_hidden='Botの実行結果を全員に見せるどうか(他の人にもコマンドを使わせたい場合、全員に見せる方がオススメです))')
+    async def _toggle_bearer_token(self,
+                        interaction: discord.Interaction,
+                        reply_is_hidden: Literal['自分のみ', '全員に見せる'] = SHOW_ME):
+        LOG.info(f'bearer_tokenの有効/無効を切り替え(discord_id: {interaction.user.id})')
+        hidden = True if reply_is_hidden == self.SHOW_ME else False
+        await interaction.response.defer(ephemeral = hidden)
+        self.check_printer_is_running()
+        result = self.likedTwitter.toggle_bearer_token(interaction.user.id)
+        if result is None:
+            await interaction.followup.send('まだ有効なbearer_tokenが登録されていません', ephemeral=hidden)
+            return
+        await interaction.followup.send(f'bearer_tokenを{result}に設定しました', ephemeral=hidden)
 
     @app_commands.command(
         name='add-liked-user-from-name',
