@@ -65,8 +65,8 @@
 ### 動かし方A(シェルを使う)
 
 ```sh
-git clone xxxx
-cd xxxxx
+git clone https://github.com/tetsuya-ki/twitter-liked-to-discordbot.git
+cd twitter-liked-to-discordbot
 chmod 755 start.sh
 ./start.sh
 ```
