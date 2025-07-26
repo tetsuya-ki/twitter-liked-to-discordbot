@@ -10,7 +10,7 @@ python = "^3.9"
 aiohttp = "^3.12.14"
 "discord.py" = "^2.2.3"
 python-dotenv = "^1.0.0"
-pycryptodome = "^3.18.0"
+pycryptodome = "^3.19.1"
 
 [tool.poetry.dev-dependencies]
 
